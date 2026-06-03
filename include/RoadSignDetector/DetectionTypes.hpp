@@ -37,8 +37,23 @@ enum class MaskColor
 enum class DetectionType
 {
     StopSign,
-    YieldSign,
-    WarningSign,
+    SpeedLimitSign,
+    NoUTurnSign,
+    NoLeftTurnSign,
+    NoRightTurnSign,
+    KeepLeftSign,
+    KeepRightSign,
+    RailwayCrossingSign,
+    FallingRocksSign,
+    RoadNarrowsSign,
+    PedestrianCrossingSign,
+    BicycleCrossingSign,
+    FerrySign,
+    AnimalCrossingSign,
+    FirstAidSign,
+    NoHornSign,
+    NoEntrySign,
+    SafetyFirstSign,
     CircularSign,
     RedTrafficLight,
     YellowTrafficLight,
@@ -87,6 +102,7 @@ struct Detection
     DetectionType type = DetectionType::Unknown;
     MaskColor color = MaskColor::Unknown;
     double confidence = 0.0;
+    std::string text;
     ShapeFeatures features;
     std::vector<cv::Point> contour;
 };
@@ -115,10 +131,40 @@ inline std::string toString(const DetectionType type)
     {
     case DetectionType::StopSign:
         return "STOP_SIGN";
-    case DetectionType::YieldSign:
-        return "YIELD_SIGN";
-    case DetectionType::WarningSign:
-        return "WARNING_SIGN";
+    case DetectionType::SpeedLimitSign:
+        return "SPEED_LIMIT_SIGN";
+    case DetectionType::NoUTurnSign:
+        return "NO_U_TURN_SIGN";
+    case DetectionType::NoLeftTurnSign:
+        return "NO_LEFT_TURN_SIGN";
+    case DetectionType::NoRightTurnSign:
+        return "NO_RIGHT_TURN_SIGN";
+    case DetectionType::KeepLeftSign:
+        return "KEEP_LEFT_SIGN";
+    case DetectionType::KeepRightSign:
+        return "KEEP_RIGHT_SIGN";
+    case DetectionType::RailwayCrossingSign:
+        return "RAILWAY_CROSSING_SIGN";
+    case DetectionType::FallingRocksSign:
+        return "FALLING_ROCKS_SIGN";
+    case DetectionType::RoadNarrowsSign:
+        return "ROAD_NARROWS_SIGN";
+    case DetectionType::PedestrianCrossingSign:
+        return "PEDESTRIAN_CROSSING_SIGN";
+    case DetectionType::BicycleCrossingSign:
+        return "BICYCLE_CROSSING_SIGN";
+    case DetectionType::FerrySign:
+        return "FERRY_SIGN";
+    case DetectionType::AnimalCrossingSign:
+        return "ANIMAL_CROSSING_SIGN";
+    case DetectionType::FirstAidSign:
+        return "FIRST_AID_SIGN";
+    case DetectionType::NoHornSign:
+        return "NO_HORN_SIGN";
+    case DetectionType::NoEntrySign:
+        return "NO_ENTRY_SIGN";
+    case DetectionType::SafetyFirstSign:
+        return "SAFETY_FIRST_SIGN";
     case DetectionType::CircularSign:
         return "CIRCULAR_SIGN";
     case DetectionType::RedTrafficLight:

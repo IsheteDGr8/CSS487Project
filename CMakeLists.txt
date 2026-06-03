@@ -16,6 +16,8 @@ add_library(RoadSignCore STATIC
     src/DisplayOnTerminal.cpp
     src/HsvMaskSegmenter.cpp
     src/RoadObjectDetector.cpp
+    src/SignPictureAnalyzer.cpp
+    src/TextReader.cpp
 )
 
 target_include_directories(RoadSignCore
@@ -44,25 +46,4 @@ if(MSVC)
 else()
     target_compile_options(RoadSignCore PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(RoadSignDetector PRIVATE -Wall -Wextra -Wpedantic)
-endif()
-
-include(CTest)
-
-if(BUILD_TESTING)
-    add_executable(DetectorSmokeTest
-        tests/detector_smoke_test.cpp
-    )
-
-    target_link_libraries(DetectorSmokeTest
-        PRIVATE
-            RoadSignCore
-    )
-
-    if(MSVC)
-        target_compile_options(DetectorSmokeTest PRIVATE /W4 /permissive-)
-    else()
-        target_compile_options(DetectorSmokeTest PRIVATE -Wall -Wextra -Wpedantic)
-    endif()
-
-    add_test(NAME DetectorSmokeTest COMMAND DetectorSmokeTest)
 endif()

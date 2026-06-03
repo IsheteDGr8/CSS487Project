@@ -13,6 +13,8 @@
 #define ROAD_SIGN_DETECTOR_ROAD_OBJECT_DETECTOR_HPP
 
 #include "RoadSignDetector/DetectionTypes.hpp"
+#include "RoadSignDetector/SignPictureAnalyzer.hpp"
+#include "RoadSignDetector/TextReader.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -40,6 +42,7 @@ struct DetectorConfig
     double houghParam2 = 18.0;
     int houghMinRadius = 5;
     int houghMaxRadius = 80;
+    double minimumTextConfidence = 0.30;
 };
 
 /*
@@ -90,6 +93,7 @@ private:
         const std::vector<cv::Point>& contour) const;
 
     [[nodiscard]] Detection labelDetection(
+        const cv::Mat& bgrImage,
         MaskColor color,
         const ShapeFeatures& features,
         const std::vector<cv::Point>& contour) const;
@@ -103,9 +107,12 @@ private:
     [[nodiscard]] static bool isOctagon(const ShapeFeatures& features);
     [[nodiscard]] bool isSquareLike(const ShapeFeatures& features) const;
     [[nodiscard]] bool isCircleLike(const ShapeFeatures& features) const;
+    [[nodiscard]] static bool hasText(const std::string& text, const std::string& word);
     [[nodiscard]] static double clampConfidence(double value);
 
     DetectorConfig config_;
+    TextReader textReader_;
+    SignPictureAnalyzer pictureAnalyzer_;
 };
 
 } // namespace rsd

@@ -14,6 +14,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include <algorithm>
+#include <string>
 
 namespace rsd
 {
@@ -61,7 +62,7 @@ std::vector<Detection> RoadObjectDetector::detect(
         for (const std::vector<cv::Point>& contour : contours)
         {
             const ShapeFeatures features = analyzeContour(bgrImage, contour);
-            Detection detection = labelDetection(input.color, features, contour);
+            Detection detection = labelDetection(bgrImage, input.color, features, contour);
 
             if (detection.type != DetectionType::Unknown)
             {
@@ -148,6 +149,7 @@ ShapeFeatures RoadObjectDetector::analyzeContour(
 }
 
 Detection RoadObjectDetector::labelDetection(
+    const cv::Mat& bgrImage,
     const MaskColor color,
     const ShapeFeatures& features,
     const std::vector<cv::Point>& contour) const
@@ -156,6 +158,91 @@ Detection RoadObjectDetector::labelDetection(
     detection.color = color;
     detection.features = features;
     detection.contour = contour;
+
+    const std::string text = textReader_.readText(bgrImage, features.boundingBox);
+    const std::string speedNumber = textReader_.readSpeedNumber(bgrImage, features.boundingBox);
+    const PictureClues clues = pictureAnalyzer_.inspect(bgrImage, features.boundingBox);
+    detection.text = text;
+
+    if (color == MaskColor::Red && isCircleLike(features) && !speedNumber.empty())
+    {
+        detection.type = DetectionType::SpeedLimitSign;
+        detection.text = speedNumber;
+        detection.confidence = clampConfidence(0.80 + features.circularity * 0.15);
+        return detection;
+    }
+
+    if (color == MaskColor::Red && clues.hasRedSlash && clues.hasDarkCurvedArrow)
+    {
+        detection.type = DetectionType::NoUTurnSign;
+        detection.confidence = 0.86;
+        return detection;
+    }
+
+    if (color == MaskColor::Red && clues.hasRedSlash && clues.hasDarkLeftArrow)
+    {
+        detection.type = DetectionType::NoLeftTurnSign;
+        detection.confidence = 0.84;
+        return detection;
+    }
+
+    if (color == MaskColor::Red && clues.hasRedSlash && clues.hasDarkRightArrow)
+    {
+        detection.type = DetectionType::NoRightTurnSign;
+        detection.confidence = 0.84;
+        return detection;
+    }
+
+    if (color == MaskColor::Blue && isCircleLike(features) && clues.hasWhiteLeftArrow)
+    {
+        detection.type = DetectionType::KeepLeftSign;
+        detection.confidence = 0.84;
+        return detection;
+    }
+
+    if (color == MaskColor::Blue && isCircleLike(features) && clues.hasWhiteRightArrow)
+    {
+        detection.type = DetectionType::KeepRightSign;
+        detection.confidence = 0.84;
+        return detection;
+    }
+
+    if (color == MaskColor::Red &&
+        isTriangle(features) &&
+        (clues.hasDarkTrainShape || hasText(text, "TRAIN") || hasText(text, "RAIL")))
+    {
+        detection.type = DetectionType::RailwayCrossingSign;
+        detection.confidence = 0.82;
+        return detection;
+    }
+
+    if ((color == MaskColor::Blue || color == MaskColor::Red) &&
+        (clues.hasWhiteCross || hasText(text, "FIRST")))
+    {
+        detection.type = DetectionType::FirstAidSign;
+        detection.confidence = 0.86;
+        return detection;
+    }
+
+    if (color == MaskColor::Red && clues.hasWhiteHorizontalBar && isCircleLike(features))
+    {
+        detection.type = DetectionType::NoEntrySign;
+        detection.confidence = 0.86;
+        return detection;
+    }
+
+    if (color == MaskColor::Red &&
+        clues.hasRedSlash &&
+        (hasText(text, "HORN") ||
+         (clues.darkAreaRatio > 0.08 &&
+          !clues.hasDarkCurvedArrow &&
+          !clues.hasDarkLeftArrow &&
+          !clues.hasDarkRightArrow)))
+    {
+        detection.type = DetectionType::NoHornSign;
+        detection.confidence = 0.82;
+        return detection;
+    }
 
     /*
      * Traffic light bulbs are nearly circular colored regions. HoughCircles is
@@ -187,21 +274,70 @@ Detection RoadObjectDetector::labelDetection(
     if (color == MaskColor::Red && isOctagon(features))
     {
         detection.type = DetectionType::StopSign;
+        if (detection.text.empty())
+        {
+            detection.text = "STOP";
+        }
         detection.confidence = clampConfidence(0.74 + features.circularity * 0.18);
         return detection;
     }
 
-    if (color == MaskColor::Red && isTriangle(features))
+    if (color == MaskColor::Red && hasText(text, "STOP"))
     {
-        detection.type = DetectionType::YieldSign;
+        detection.type = DetectionType::StopSign;
+        detection.confidence = 0.88;
+        return detection;
+    }
+
+    if (color == MaskColor::Yellow && hasText(text, "SAFETY"))
+    {
+        detection.type = DetectionType::SafetyFirstSign;
+        detection.confidence = 0.84;
+        return detection;
+    }
+
+    if (hasText(text, "FALL") || hasText(text, "ROCK") ||
+        (color == MaskColor::Yellow && clues.hasManySmallDarkParts && clues.hasTallDarkShape))
+    {
+        detection.type = DetectionType::FallingRocksSign;
         detection.confidence = 0.82;
         return detection;
     }
 
-    if (color == MaskColor::Yellow && isSquareLike(features))
+    if (hasText(text, "FERRY") || clues.hasBottomWaveShape)
     {
-        detection.type = DetectionType::WarningSign;
+        detection.type = DetectionType::FerrySign;
         detection.confidence = 0.80;
+        return detection;
+    }
+
+    if ((color == MaskColor::Yellow || color == MaskColor::Blue) && clues.hasTwoWheelShapes)
+    {
+        detection.type = DetectionType::BicycleCrossingSign;
+        detection.confidence = 0.80;
+        return detection;
+    }
+
+    if (color == MaskColor::Yellow && clues.hasWideAnimalShape)
+    {
+        detection.type = DetectionType::AnimalCrossingSign;
+        detection.confidence = 0.78;
+        return detection;
+    }
+
+    if (color == MaskColor::Yellow && clues.hasTallDarkShape)
+    {
+        detection.type = DetectionType::RoadNarrowsSign;
+        detection.confidence = 0.76;
+        return detection;
+    }
+
+    if ((color == MaskColor::Blue || color == MaskColor::Yellow) &&
+        clues.darkAreaRatio > 0.05 &&
+        clues.darkPartCount >= 2)
+    {
+        detection.type = DetectionType::PedestrianCrossingSign;
+        detection.confidence = 0.72;
         return detection;
     }
 
@@ -282,6 +418,11 @@ bool RoadObjectDetector::isSquareLike(const ShapeFeatures& features) const
 bool RoadObjectDetector::isCircleLike(const ShapeFeatures& features) const
 {
     return features.circularity >= config_.minimumCircularity;
+}
+
+bool RoadObjectDetector::hasText(const std::string& text, const std::string& word)
+{
+    return text.find(word) != std::string::npos;
 }
 
 double RoadObjectDetector::clampConfidence(const double value)

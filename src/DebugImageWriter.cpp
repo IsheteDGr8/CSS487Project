@@ -69,8 +69,12 @@ void DebugImageWriter::drawDetection(cv::Mat& image, const Detection& detection)
                    cv::Scalar(0, 255, 0), 2);
     }
 
-    const std::string label =
-        toString(detection.type) + " " + toString(detection.color);
+    std::string label = toString(detection.type);
+    if (!detection.text.empty())
+    {
+        label += " " + detection.text;
+    }
+    label += " " + toString(detection.color);
     const cv::Point textPoint(box.x, std::max(0, box.y - 8));
     cv::putText(image, label, textPoint, cv::FONT_HERSHEY_SIMPLEX, 0.55,
                 cv::Scalar(0, 255, 255), 2);

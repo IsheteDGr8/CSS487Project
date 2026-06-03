@@ -26,8 +26,9 @@ void DisplayOnTerminal::printDetections(
     }
 
     output << std::left
-           << std::setw(22) << "type"
+           << std::setw(28) << "type"
            << std::setw(10) << "color"
+           << std::setw(16) << "text"
            << std::setw(12) << "area"
            << std::setw(10) << "verts"
            << std::setw(14) << "circularity"
@@ -37,8 +38,9 @@ void DisplayOnTerminal::printDetections(
     for (const Detection& detection : detections)
     {
         output << std::left
-               << std::setw(22) << toString(detection.type)
+               << std::setw(28) << toString(detection.type)
                << std::setw(10) << toString(detection.color)
+               << std::setw(16) << detection.text
                << std::setw(12) << static_cast<int>(detection.features.area)
                << std::setw(10) << detection.features.vertexCount
                << std::setw(14) << std::fixed << std::setprecision(3)
