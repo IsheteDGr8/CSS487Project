@@ -8,16 +8,59 @@
  */
 
 #include "RoadSignDetector/DebugImageWriter.hpp"
+#include "RoadSignDetector/DetectionSelection.hpp"
 
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include <algorithm>
+#include <cstddef>
 #include <cmath>
 #include <string>
 
 namespace rsd
 {
+
+namespace
+{
+
+constexpr std::size_t kMaximumAnnotatedDetections = 2U;
+
+[[nodiscard]] cv::Mat createFocusedMask(
+    const MaskInput& mask,
+    const std::vector<Detection>& shownDetections)
+{
+    cv::Mat focusedMask = cv::Mat::zeros(mask.mask.size(), CV_8UC1);
+
+    for (const Detection& detection : shownDetections)
+    {
+        if (detection.color != mask.color)
+        {
+            continue;
+        }
+
+        if (!detection.contour.empty())
+        {
+            cv::drawContours(
+                focusedMask,
+                std::vector<std::vector<cv::Point>>{detection.contour},
+                -1,
+                cv::Scalar(255),
+                cv::FILLED);
+        }
+        else if (detection.features.boundingBox.area() > 0)
+        {
+            cv::rectangle(
+                focusedMask,
+                detection.features.boundingBox,
+                cv::Scalar(255),
+                cv::FILLED);
+        }
+    }
+
+    return focusedMask;
+}
+
+} // namespace
 
 void DebugImageWriter::save(
     const std::filesystem::path& outputDirectory,
@@ -30,12 +73,17 @@ void DebugImageWriter::save(
     const cv::Mat annotatedImage = createAnnotatedImage(bgrImage, detections);
     cv::imwrite((outputDirectory / "annotated.png").string(), annotatedImage);
 
+    const std::vector<Detection> shownDetections = chooseStrongestDetections(
+        detections, kMaximumAnnotatedDetections);
+
     for (const MaskInput& mask : masks)
     {
         const std::string fileName = mask.debugName.empty()
             ? toString(mask.color) + "_mask.png"
             : mask.debugName + "_mask.png";
-        cv::imwrite((outputDirectory / fileName).string(), mask.mask);
+        cv::imwrite(
+            (outputDirectory / fileName).string(),
+            createFocusedMask(mask, shownDetections));
     }
 }
 
@@ -45,7 +93,8 @@ cv::Mat DebugImageWriter::createAnnotatedImage(
 {
     cv::Mat annotatedImage = bgrImage.clone();
 
-    for (const Detection& detection : detections)
+    for (const Detection& detection : chooseStrongestDetections(
+             detections, kMaximumAnnotatedDetections))
     {
         drawDetection(annotatedImage, detection);
     }

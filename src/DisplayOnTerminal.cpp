@@ -8,12 +8,21 @@
  */
 
 #include "RoadSignDetector/DisplayOnTerminal.hpp"
+#include "RoadSignDetector/DetectionSelection.hpp"
 
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 
 namespace rsd
 {
+
+namespace
+{
+
+constexpr std::size_t kMaximumDisplayedDetections = 2U;
+
+} // namespace
 
 void DisplayOnTerminal::printDetections(
     const std::vector<Detection>& detections,
@@ -35,7 +44,8 @@ void DisplayOnTerminal::printDetections(
            << std::setw(10) << "hough"
            << "confidence" << '\n';
 
-    for (const Detection& detection : detections)
+    for (const Detection& detection : chooseStrongestDetections(
+             detections, kMaximumDisplayedDetections))
     {
         output << std::left
                << std::setw(28) << toString(detection.type)

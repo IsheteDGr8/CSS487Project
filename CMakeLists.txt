@@ -13,6 +13,7 @@ find_package(OpenCV 4 REQUIRED)
 
 add_library(RoadSignCore STATIC
     src/DebugImageWriter.cpp
+    src/DetectionSelection.cpp
     src/DisplayOnTerminal.cpp
     src/HsvMaskSegmenter.cpp
     src/RoadObjectDetector.cpp
