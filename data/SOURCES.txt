@@ -1,0 +1,32 @@
+# Test image sources (Wikimedia Commons, freely licensed)
+# Re-download: scripts\download_test_data.bat
+#
+# Naming convention:
+#   traffic_light_N.jpg|png  — traffic light test images (N = 1..4)
+#   <sign_type>_sign_1.jpg     — one image per supported road-sign label
+#
+# traffic_light_1.png  (local / team image — green traffic light)
+# traffic_light_2.jpg  https://commons.wikimedia.org/wiki/File:UK_Red_Traffic_Light_Signal_-_geograph.org.uk_-_5116452.jpg
+# traffic_light_3.jpg  https://commons.wikimedia.org/wiki/File:Traffic_lights.jpg
+# traffic_light_4.jpg  https://commons.wikimedia.org/wiki/File:Traffic_lights_at_night.jpg
+#
+# stop_sign_1.jpg              https://commons.wikimedia.org/wiki/File:Stop_road_sign_in_Italy.jpg
+# speed_limit_sign_1.jpg       https://commons.wikimedia.org/wiki/File:Zone_30.jpg
+# no_u_turn_sign_1.jpg         https://commons.wikimedia.org/wiki/File:No_u-turn_sign.JPG
+# no_left_turn_sign_1.jpg      https://commons.wikimedia.org/wiki/File:Do_not_turn_left_sign_in_Oregon.jpg
+# no_right_turn_sign_1.jpg     https://commons.wikimedia.org/wiki/File:No_Right_Turn_sign,_Stow_Hill,_Newport_-_geograph.org.uk_-_6418574.jpg
+# keep_left_sign_1.jpg         https://commons.wikimedia.org/wiki/File:Italian_traffic_signs_-_direzione_obbligatoria_a_sinistra.svg
+# keep_right_sign_1.jpg        https://commons.wikimedia.org/wiki/File:Italian_traffic_signs_-_direzione_obbligatoria_a_destra.svg
+# railway_crossing_sign_1.jpg  https://commons.wikimedia.org/wiki/File:Old_Fashioned_Railroad_Crossbuck_@_Danbury_Railway_Museum.jpg
+# falling_rocks_sign_1.jpg     https://commons.wikimedia.org/wiki/File:Falling_rocks_sign.jpg
+# road_narrows_sign_1.jpg      https://commons.wikimedia.org/wiki/File:UK_traffic_sign_517.svg
+# pedestrian_crossing_sign_1.jpg https://commons.wikimedia.org/wiki/File:Diagrams_of_signalised_pedestrian_crossing_warning_road_signs_19.jpg
+# bicycle_crossing_sign_1.jpg  https://commons.wikimedia.org/wiki/File:UK_traffic_sign_950.svg
+# ferry_sign_1.jpg               https://commons.wikimedia.org/wiki/File:UK_traffic_sign_824.svg
+# animal_crossing_sign_1.jpg   https://commons.wikimedia.org/wiki/File:Animal_crossing_sign.jpg
+# first_aid_sign_1.jpg         https://commons.wikimedia.org/wiki/File:Neuquén,_Argentina_-_Hospital_1960s.jpg
+# no_horn_sign_1.jpg           https://commons.wikimedia.org/wiki/File:Honking_is_not_allowed.JPG
+# no_entry_sign_1.jpg            https://commons.wikimedia.org/wiki/File:No_entry_sign.jpg
+# safety_first_sign_1.jpg      https://commons.wikimedia.org/wiki/File:AA_sign_at_Tarrant_Gunville_-_geograph.org.uk_-_223210.jpg
+#
+# Total images: 22 (4 traffic lights + 18 road signs)
