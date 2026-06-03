@@ -15,6 +15,7 @@
 #include "RoadSignDetector/DetectionTypes.hpp"
 #include "RoadSignDetector/SignPictureAnalyzer.hpp"
 #include "RoadSignDetector/TextReader.hpp"
+#include "RoadSignDetector/TrafficLightFinder.hpp"
 
 #include <opencv2/core.hpp>
 
@@ -113,6 +114,7 @@ private:
     DetectorConfig config_;
     TextReader textReader_;
     SignPictureAnalyzer pictureAnalyzer_;
+    TrafficLightFinder trafficLightFinder_;
 };
 
 } // namespace rsd

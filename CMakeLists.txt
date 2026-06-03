@@ -18,6 +18,7 @@ add_library(RoadSignCore STATIC
     src/RoadObjectDetector.cpp
     src/SignPictureAnalyzer.cpp
     src/TextReader.cpp
+    src/TrafficLightFinder.cpp
 )
 
 target_include_directories(RoadSignCore

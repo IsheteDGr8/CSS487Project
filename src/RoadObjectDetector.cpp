@@ -53,7 +53,7 @@ std::vector<Detection> RoadObjectDetector::detect(
     const cv::Mat& bgrImage,
     const std::vector<MaskInput>& masks) const
 {
-    std::vector<Detection> detections;
+    std::vector<Detection> detections = trafficLightFinder_.find(bgrImage);
 
     for (const MaskInput& input : masks)
     {
