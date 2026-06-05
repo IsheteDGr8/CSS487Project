@@ -13,8 +13,6 @@
 #define ROAD_SIGN_DETECTOR_ROAD_OBJECT_DETECTOR_HPP
 
 #include "RoadSignDetector/DetectionTypes.hpp"
-#include "RoadSignDetector/SignPictureAnalyzer.hpp"
-#include "RoadSignDetector/TextReader.hpp"
 #include "RoadSignDetector/TrafficLightFinder.hpp"
 
 #include <opencv2/core.hpp>
@@ -24,98 +22,96 @@
 namespace rsd
 {
 
-/*
- *
- * The defaults are to remove
- * tiny specks, tolerate imperfect contours, and only accept Hough circles that
- * are large enough to represent a visible traffic light bulb.
- */
-struct DetectorConfig
-{
-    double minContourArea = 200.0;
-    double maxContourArea = 250000.0;
-    double polygonApproximationRatio = 0.035;
-    double minimumCircularity = 0.72;
-    double squareAspectTolerance = 0.35;
-    double houghDp = 1.2;
-    double houghMinDistance = 18.0;
-    double houghParam1 = 120.0;
-    double houghParam2 = 18.0;
-    int houghMinRadius = 5;
-    int houghMaxRadius = 80;
-    double minimumTextConfidence = 0.30;
-};
-
-/*
- * Algorithmic road object detector.
- *
- *:
- *   - The detector owns only its configuration.
- *   - Input images and masks are borrowed during function calls.
- *   - Returned detections contain copied contours and value type features.
- */
-class RoadObjectDetector
-{
-public:
-    explicit RoadObjectDetector(DetectorConfig config = DetectorConfig());
+    /*
+     *
+     * The defaults are to remove
+     * tiny specks, tolerate imperfect contours, and only accept Hough circles that
+     * are large enough to represent a visible traffic light bulb.
+     */
+    struct DetectorConfig
+    {
+        double minContourArea = 200.0;
+        double maxContourArea = 250000.0;
+        double polygonApproximationRatio = 0.035;
+        double minimumCircularity = 0.72;
+        double squareAspectTolerance = 0.35;
+        double houghDp = 1.2;
+        double houghMinDistance = 18.0;
+        double houghParam1 = 120.0;
+        double houghParam2 = 18.0;
+        int houghMinRadius = 5;
+        int houghMaxRadius = 80;
+        double minimumTextConfidence = 0.30;
+    };
 
     /*
-     * Runs the full detection pipeline.
+     * Algorithmic road object detector.
      *
-     * Preconditions:
-     *   - bgrImage is either empty or a valid 8 bit BGR image. A non empty image
-     *     enables Hough circle analysis inside contour regions.
-     *   - masks contains one binary mask per HSV color class.
-     *
-     * Postconditions:
-     *   - Returns zero or more detections sorted by descending confidence.
-     *   - Does not modify bgrImage or any mask stored in masks.
+     *:
+     *   - The detector owns only its configuration.
+     *   - Input images and masks are borrowed during function calls.
+     *   - Returned detections contain copied contours and value type features.
      */
-    [[nodiscard]] std::vector<Detection> detect(
-        const cv::Mat& bgrImage,
-        const std::vector<MaskInput>& masks) const;
+    class RoadObjectDetector
+    {
+    public:
+        explicit RoadObjectDetector(DetectorConfig config = DetectorConfig());
 
-    /*
-     * Extracts external contours from a binary mask.
-     *
-     * Preconditions:
-     *   - mask must represent foreground with non-zero pixels.
-     *
-     * Postconditions:
-     *   - Returns only contours whose area falls inside the configured area
-     *     range.
-     */
-    [[nodiscard]] std::vector<std::vector<cv::Point>> extractContours(
-        const cv::Mat& mask) const;
+        /*
+         * Runs the full detection pipeline.
+         *
+         * Preconditions:
+         *   - bgrImage is either empty or a valid 8 bit BGR image. A non empty image
+         *     enables Hough circle analysis inside contour regions.
+         *   - masks contains one binary mask per HSV color class.
+         *
+         * Postconditions:
+         *   - Returns zero or more detections sorted by descending confidence.
+         *   - Does not modify bgrImage or any mask stored in masks.
+         */
+        [[nodiscard]] std::vector<Detection> detect(
+            const cv::Mat &bgrImage,
+            const std::vector<MaskInput> &masks) const;
 
-private:
-    [[nodiscard]] ShapeFeatures analyzeContour(
-        const cv::Mat& bgrImage,
-        const std::vector<cv::Point>& contour) const;
+        /*
+         * Extracts external contours from a binary mask.
+         *
+         * Preconditions:
+         *   - mask must represent foreground with non-zero pixels.
+         *
+         * Postconditions:
+         *   - Returns only contours whose area falls inside the configured area
+         *     range.
+         */
+        [[nodiscard]] std::vector<std::vector<cv::Point>> extractContours(
+            const cv::Mat &mask) const;
 
-    [[nodiscard]] Detection labelDetection(
-        const cv::Mat& bgrImage,
-        MaskColor color,
-        const ShapeFeatures& features,
-        const std::vector<cv::Point>& contour) const;
+    private:
+        [[nodiscard]] ShapeFeatures analyzeContour(
+            const cv::Mat &bgrImage,
+            const std::vector<cv::Point> &contour) const;
 
-    [[nodiscard]] bool tryFindHoughCircle(
-        const cv::Mat& bgrImage,
-        const cv::Rect& boundingBox,
-        ShapeFeatures& features) const;
+        [[nodiscard]] Detection labelDetection(
+            const cv::Mat &bgrImage,
+            MaskColor color,
+            const ShapeFeatures &features,
+            const std::vector<cv::Point> &contour) const;
 
-    [[nodiscard]] static bool isTriangle(const ShapeFeatures& features);
-    [[nodiscard]] static bool isOctagon(const ShapeFeatures& features);
-    [[nodiscard]] bool isSquareLike(const ShapeFeatures& features) const;
-    [[nodiscard]] bool isCircleLike(const ShapeFeatures& features) const;
-    [[nodiscard]] static bool hasText(const std::string& text, const std::string& word);
-    [[nodiscard]] static double clampConfidence(double value);
+        [[nodiscard]] bool tryFindHoughCircle(
+            const cv::Mat &bgrImage,
+            const cv::Rect &boundingBox,
+            ShapeFeatures &features) const;
 
-    DetectorConfig config_;
-    TextReader textReader_;
-    SignPictureAnalyzer pictureAnalyzer_;
-    TrafficLightFinder trafficLightFinder_;
-};
+        [[nodiscard]] static bool isTriangle(const ShapeFeatures &features);
+        [[nodiscard]] static bool isOctagon(const ShapeFeatures &features);
+        [[nodiscard]] bool isSquareLike(const ShapeFeatures &features) const;
+        [[nodiscard]] bool isCircleLike(const ShapeFeatures &features) const;
+        [[nodiscard]] static bool hasText(const std::string &text, const std::string &word);
+        [[nodiscard]] static double clampConfidence(double value);
+
+        DetectorConfig config_;
+        TrafficLightFinder trafficLightFinder_;
+    };
 
 } // namespace rsd
 
