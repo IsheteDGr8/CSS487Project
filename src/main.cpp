@@ -18,9 +18,11 @@
  *   Both               — both detectors on the same frame
  *
  * CLI overrides (optional):
- *   --signs-only   force SignsOnly on every phase
- *   --lights-only  force TrafficLightsOnly on every phase
- *   --both         force Both on every phase
+ *   --signs-only          force SignsOnly on every phase
+ *   --lights-only         force TrafficLightsOnly on every phase
+ *   --both                force Both on every phase
+ *   --save-screenshots    save annotated frames to docs/screenshots/ (no GUI)
+ *   --save-screenshots DIR  save annotated frames to DIR (no GUI)
  *
  * Assumptions:
  *   - OpenCV 4 is installed; working directory is the project root.
@@ -41,6 +43,85 @@
 #include "RoadSignDetector/ShapeAnalyzer.h"
 
 namespace fs = std::filesystem;
+
+namespace
+{
+fs::path g_screenshotDir;
+
+std::string sanitizeFileStem(std::string text)
+{
+    for (char &ch : text)
+    {
+        if (ch == ' ' || ch == '-' || ch == '\\' || ch == '/')
+        {
+            ch = '_';
+        }
+    }
+    while (!text.empty() && text.back() == '_')
+    {
+        text.pop_back();
+    }
+    return text;
+}
+
+bool parseScreenshotDir(const int argc, char *argv[])
+{
+    for (int i = 1; i < argc; ++i)
+    {
+        const std::string arg = argv[i];
+        if (arg == "--save-screenshots")
+        {
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+            {
+                g_screenshotDir = fs::path(argv[i + 1]);
+            }
+            else
+            {
+                g_screenshotDir = "docs/screenshots";
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+cv::Mat makeDisplayFrame(const cv::Mat &frame)
+{
+    constexpr int topPad = 50;
+    constexpr int displayWidth = 800;
+
+    cv::Mat padded;
+    cv::copyMakeBorder(frame, padded, topPad, 0, 0, 0, cv::BORDER_CONSTANT, cv::Scalar(30, 30, 30));
+
+    const int displayHeight =
+        static_cast<int>(padded.rows * (static_cast<double>(displayWidth) / padded.cols));
+    cv::Mat display;
+    cv::resize(padded, display, cv::Size(displayWidth, displayHeight));
+    return display;
+}
+
+bool saveScreenshot(const std::string &fileStem, const cv::Mat &frame)
+{
+    if (g_screenshotDir.empty())
+    {
+        return false;
+    }
+
+    fs::create_directories(g_screenshotDir);
+    const std::string stem = sanitizeFileStem(fs::path(fileStem).stem().string());
+    const fs::path outPath = g_screenshotDir / (stem + ".png");
+    const cv::Mat display = makeDisplayFrame(frame);
+    if (!cv::imwrite(outPath.string(), display))
+    {
+        std::cerr << "Failed to save screenshot: " << outPath.string() << std::endl;
+        return false;
+    }
+
+    std::cout << "Saved screenshot: " << outPath.string() << std::endl;
+    return true;
+}
+
+} // namespace
 
 enum class PipelineMode
 {
@@ -324,16 +405,15 @@ static bool isTargetRegulatoryImage(const fs::path &path)
 
 static void showStaticFrame(const std::string &windowTitle, const cv::Mat &frame)
 {
-    constexpr int topPad = 50;
+    if (!g_screenshotDir.empty())
+    {
+        saveScreenshot(windowTitle, frame);
+        return;
+    }
+
+    const cv::Mat display = makeDisplayFrame(frame);
     constexpr int displayWidth = 800;
-
-    cv::Mat padded;
-    cv::copyMakeBorder(frame, padded, topPad, 0, 0, 0, cv::BORDER_CONSTANT, cv::Scalar(30, 30, 30));
-
-    const int displayHeight =
-        static_cast<int>(padded.rows * (static_cast<double>(displayWidth) / padded.cols));
-    cv::Mat display;
-    cv::resize(padded, display, cv::Size(displayWidth, displayHeight));
+    const int displayHeight = display.rows;
 
     cv::namedWindow(windowTitle, cv::WINDOW_NORMAL);
     cv::resizeWindow(windowTitle, displayWidth, displayHeight);
@@ -361,7 +441,12 @@ static void runFolderImageTests(const fs::path &folder,
         return;
     }
 
-    std::cout << "--- " << sectionLabel << " (press any key for next) ---" << std::endl;
+    std::cout << "--- " << sectionLabel;
+    if (g_screenshotDir.empty())
+    {
+        std::cout << " (press any key for next)";
+    }
+    std::cout << " ---" << std::endl;
     std::cout << "Mode: " << pipelineModeLabel(mode) << std::endl;
 
     for (const auto &entry : fs::directory_iterator(folder))
@@ -491,6 +576,44 @@ static bool runDashcamVideo(const fs::path &videoPath,
     cv::Mat frame;
     double fps = 0.0;
 
+    if (!g_screenshotDir.empty())
+    {
+        const double totalFrames = cap.get(cv::CAP_PROP_FRAME_COUNT);
+        const int capturePoints[] = {1, 300, 600, 900, 1200, 1800};
+
+        for (const int frameIndex : capturePoints)
+        {
+            if (totalFrames > 0.0 && frameIndex >= static_cast<int>(totalFrames))
+            {
+                continue;
+            }
+
+            cap.set(cv::CAP_PROP_POS_FRAMES, static_cast<double>(frameIndex - 1));
+            cap >> frame;
+            if (frame.empty())
+            {
+                continue;
+            }
+
+            cv::resize(frame, frame,
+                       cv::Size(videoWidth, static_cast<int>(frame.rows * (static_cast<double>(
+                                                                              videoWidth) /
+                                                                          frame.cols))));
+
+            processFrame(frame, signSegmenter, signAnalyzer, manishSegmenter, manishDetector,
+                         mode, SignCategory::Dashcam);
+            cv::putText(frame, "Frame: " + std::to_string(frameIndex), cv::Point(10, 30),
+                        cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 2);
+
+            const std::string stem =
+                "dashcam_" + videoPath.stem().string() + "_frame_" + std::to_string(frameIndex);
+            saveScreenshot(stem, frame);
+        }
+
+        cap.release();
+        return false;
+    }
+
     while (true)
     {
         const int64 startTick = cv::getTickCount();
@@ -543,7 +666,10 @@ static void runDashcamVideoTests(ColorSegmenter &signSegmenter,
 
     std::cout << "--- STARTING VIDEO DEMO ---" << std::endl;
     std::cout << "Mode: " << pipelineModeLabel(mode) << std::endl;
-    std::cout << "Press ESC on a video window to skip remaining clips." << std::endl;
+    if (g_screenshotDir.empty())
+    {
+        std::cout << "Press ESC on a video window to skip remaining clips." << std::endl;
+    }
 
     for (const char *name : videoNames)
     {
@@ -594,6 +720,7 @@ int main(const int argc, char *argv[])
 
     PipelineMode cliOverride = PipelineMode::Both;
     const bool hasCliOverride = parseCliModeOverride(argc, argv, cliOverride);
+    const bool savingScreenshots = parseScreenshotDir(argc, argv);
 
     const PipelineMode staticMode = hasCliOverride ? cliOverride : kDefaultStaticMode;
     const PipelineMode trafficLightMode =
@@ -606,6 +733,11 @@ int main(const int argc, char *argv[])
     {
         std::cout << "CLI override active — all phases use mode: "
                   << pipelineModeLabel(cliOverride) << std::endl;
+    }
+    if (savingScreenshots)
+    {
+        std::cout << "Screenshot mode: saving annotated frames to "
+                  << fs::absolute(g_screenshotDir).string() << std::endl;
     }
 
     if (!hasSignData(root))
