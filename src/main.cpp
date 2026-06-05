@@ -46,80 +46,80 @@ namespace fs = std::filesystem;
 
 namespace
 {
-fs::path g_screenshotDir;
+    fs::path g_screenshotDir;
 
-std::string sanitizeFileStem(std::string text)
-{
-    for (char &ch : text)
+    std::string sanitizeFileStem(std::string text)
     {
-        if (ch == ' ' || ch == '-' || ch == '\\' || ch == '/')
+        for (char &ch : text)
         {
-            ch = '_';
+            if (ch == ' ' || ch == '-' || ch == '\\' || ch == '/')
+            {
+                ch = '_';
+            }
         }
-    }
-    while (!text.empty() && text.back() == '_')
-    {
-        text.pop_back();
-    }
-    return text;
-}
-
-bool parseScreenshotDir(const int argc, char *argv[])
-{
-    for (int i = 1; i < argc; ++i)
-    {
-        const std::string arg = argv[i];
-        if (arg == "--save-screenshots")
+        while (!text.empty() && text.back() == '_')
         {
-            if (i + 1 < argc && argv[i + 1][0] != '-')
-            {
-                g_screenshotDir = fs::path(argv[i + 1]);
-            }
-            else
-            {
-                g_screenshotDir = "docs/screenshots";
-            }
-            return true;
+            text.pop_back();
         }
+        return text;
     }
-    return false;
-}
 
-cv::Mat makeDisplayFrame(const cv::Mat &frame)
-{
-    constexpr int topPad = 50;
-    constexpr int displayWidth = 800;
-
-    cv::Mat padded;
-    cv::copyMakeBorder(frame, padded, topPad, 0, 0, 0, cv::BORDER_CONSTANT, cv::Scalar(30, 30, 30));
-
-    const int displayHeight =
-        static_cast<int>(padded.rows * (static_cast<double>(displayWidth) / padded.cols));
-    cv::Mat display;
-    cv::resize(padded, display, cv::Size(displayWidth, displayHeight));
-    return display;
-}
-
-bool saveScreenshot(const std::string &fileStem, const cv::Mat &frame)
-{
-    if (g_screenshotDir.empty())
+    bool parseScreenshotDir(const int argc, char *argv[])
     {
+        for (int i = 1; i < argc; ++i)
+        {
+            const std::string arg = argv[i];
+            if (arg == "--save-screenshots")
+            {
+                if (i + 1 < argc && argv[i + 1][0] != '-')
+                {
+                    g_screenshotDir = fs::path(argv[i + 1]);
+                }
+                else
+                {
+                    g_screenshotDir = "docs/screenshots";
+                }
+                return true;
+            }
+        }
         return false;
     }
 
-    fs::create_directories(g_screenshotDir);
-    const std::string stem = sanitizeFileStem(fs::path(fileStem).stem().string());
-    const fs::path outPath = g_screenshotDir / (stem + ".png");
-    const cv::Mat display = makeDisplayFrame(frame);
-    if (!cv::imwrite(outPath.string(), display))
+    cv::Mat makeDisplayFrame(const cv::Mat &frame)
     {
-        std::cerr << "Failed to save screenshot: " << outPath.string() << std::endl;
-        return false;
+        constexpr int topPad = 50;
+        constexpr int displayWidth = 800;
+
+        cv::Mat padded;
+        cv::copyMakeBorder(frame, padded, topPad, 0, 0, 0, cv::BORDER_CONSTANT, cv::Scalar(30, 30, 30));
+
+        const int displayHeight =
+            static_cast<int>(padded.rows * (static_cast<double>(displayWidth) / padded.cols));
+        cv::Mat display;
+        cv::resize(padded, display, cv::Size(displayWidth, displayHeight));
+        return display;
     }
 
-    std::cout << "Saved screenshot: " << outPath.string() << std::endl;
-    return true;
-}
+    bool saveScreenshot(const std::string &fileStem, const cv::Mat &frame)
+    {
+        if (g_screenshotDir.empty())
+        {
+            return false;
+        }
+
+        fs::create_directories(g_screenshotDir);
+        const std::string stem = sanitizeFileStem(fs::path(fileStem).stem().string());
+        const fs::path outPath = g_screenshotDir / (stem + ".png");
+        const cv::Mat display = makeDisplayFrame(frame);
+        if (!cv::imwrite(outPath.string(), display))
+        {
+            std::cerr << "Failed to save screenshot: " << outPath.string() << std::endl;
+            return false;
+        }
+
+        std::cout << "Saved screenshot: " << outPath.string() << std::endl;
+        return true;
+    }
 
 } // namespace
 
@@ -597,8 +597,8 @@ static bool runDashcamVideo(const fs::path &videoPath,
 
             cv::resize(frame, frame,
                        cv::Size(videoWidth, static_cast<int>(frame.rows * (static_cast<double>(
-                                                                              videoWidth) /
-                                                                          frame.cols))));
+                                                                               videoWidth) /
+                                                                           frame.cols))));
 
             processFrame(frame, signSegmenter, signAnalyzer, manishSegmenter, manishDetector,
                          mode, SignCategory::Dashcam);
