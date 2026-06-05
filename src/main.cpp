@@ -24,12 +24,15 @@
  *   - Working directory is the project root when launched from Visual Studio.
  */
 
+#include <cstddef>
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <string>
 
 #include "RoadSignDetector/ColorSegmenter.h"
+#include "RoadSignDetector/DetectionSelection.hpp"
 #include "RoadSignDetector/HsvMaskSegmenter.hpp"
 #include "RoadSignDetector/RoadObjectDetector.hpp"
 #include "RoadSignDetector/ShapeAnalyzer.h"
@@ -130,6 +133,28 @@ static void processSignCategory(cv::Mat &frame,
     }
 }
 
+static bool isTrafficLightType(const rsd::DetectionType type)
+{
+    return type == rsd::DetectionType::RedTrafficLight ||
+           type == rsd::DetectionType::YellowTrafficLight ||
+           type == rsd::DetectionType::GreenTrafficLight;
+}
+
+static cv::Scalar trafficLightColor(const rsd::DetectionType type)
+{
+    switch (type)
+    {
+    case rsd::DetectionType::RedTrafficLight:
+        return cv::Scalar(0, 0, 255);
+    case rsd::DetectionType::YellowTrafficLight:
+        return cv::Scalar(0, 255, 255);
+    case rsd::DetectionType::GreenTrafficLight:
+        return cv::Scalar(0, 255, 0);
+    default:
+        return cv::Scalar(255, 0, 255);
+    }
+}
+
 static void processTrafficLights(cv::Mat &frame,
                                  const rsd::HsvMaskSegmenter &manishSegmenter,
                                  const rsd::RoadObjectDetector &manishDetector)
@@ -137,12 +162,42 @@ static void processTrafficLights(cv::Mat &frame,
     const std::vector<rsd::MaskInput> masks = manishSegmenter.createMasks(frame);
     const std::vector<rsd::Detection> detections = manishDetector.detect(frame, masks);
 
-    for (const auto &det : detections)
+    std::vector<rsd::Detection> trafficOnly;
+    trafficOnly.reserve(detections.size());
+    for (const rsd::Detection &detection : detections)
     {
-        cv::rectangle(frame, det.features.boundingBox, cv::Scalar(255, 0, 255), 3);
-        cv::putText(frame, "TRAFFIC LIGHT",
-                    cv::Point(det.features.boundingBox.x, det.features.boundingBox.y - 10),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 0, 255), 2);
+        if (isTrafficLightType(detection.type))
+        {
+            trafficOnly.push_back(detection);
+        }
+    }
+
+    constexpr std::size_t kMaximumTrafficLightDetections = 2U;
+    for (const rsd::Detection &det :
+         rsd::chooseStrongestDetections(trafficOnly, kMaximumTrafficLightDetections))
+    {
+        const cv::Scalar color = trafficLightColor(det.type);
+        const cv::Rect &box = det.features.boundingBox;
+
+        cv::rectangle(frame, box, color, 3);
+        if (!det.contour.empty())
+        {
+            cv::drawContours(frame, std::vector<std::vector<cv::Point>>{det.contour}, -1,
+                             cv::Scalar(255, 0, 255), 2);
+        }
+
+        if (det.features.hasHoughCircle)
+        {
+            const cv::Point center(
+                static_cast<int>(std::lround(det.features.houghCenter.x)),
+                static_cast<int>(std::lround(det.features.houghCenter.y)));
+            cv::circle(frame, center, static_cast<int>(det.features.houghRadius),
+                       cv::Scalar(0, 255, 0), 2);
+        }
+
+        const std::string label = rsd::toString(det.type);
+        cv::putText(frame, label, cv::Point(box.x, std::max(box.y - 10, 22)),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.7, color, 2);
     }
 }
 

@@ -52,9 +52,23 @@ namespace rsd
         const cv::Mat &bgrImage,
         const std::vector<MaskInput> &masks) const
     {
-        (void)masks;
-
         std::vector<Detection> detections = trafficLightFinder_.find(bgrImage);
+
+        for (const MaskInput &input : masks)
+        {
+            const std::vector<std::vector<cv::Point>> contours = extractContours(input.mask);
+
+            for (const std::vector<cv::Point> &contour : contours)
+            {
+                const ShapeFeatures features = analyzeContour(bgrImage, contour);
+                const Detection detection = labelDetection(bgrImage, input.color, features, contour);
+
+                if (detection.type != DetectionType::Unknown)
+                {
+                    detections.push_back(detection);
+                }
+            }
+        }
 
         std::sort(
             detections.begin(),
