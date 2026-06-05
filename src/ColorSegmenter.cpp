@@ -2,13 +2,13 @@
  * ColorSegmenter.cpp
  *
  * Purpose: Implements HSV masking and optional slider tuning windows.
- * Authors: Ishaan, Manish
+ * Authors: Ishaan
  *
  * Assumptions:
  *   - Same as ColorSegmenter.h.
  *   - Gaussian blur (5x5) is applied before every mask pass.
  */
-#include "../include/RoadSignDetector/ColorSegmenter.h"
+#include "RoadSignDetector/ColorSegmenter.h"
 #include <algorithm>
 #include <iostream>
 #include <vector>

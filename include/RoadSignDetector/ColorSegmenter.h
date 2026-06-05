@@ -2,7 +2,7 @@
  * ColorSegmenter.h
  *
  * Purpose: Builds binary color masks from BGR frames so ShapeAnalyzer can find signs.
- * Authors: Ishaan, Manish
+ * Authors: Ishaan
  *
  * Assumptions:
  *   - Input images are 3-channel BGR (OpenCV default).

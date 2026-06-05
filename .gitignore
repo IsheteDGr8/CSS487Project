@@ -439,6 +439,8 @@ FodyWeavers.xsd
 # Project-specific
 build/
 build-*/
+build-vs2022/
 out/
 output/
+test_out/
 .DS_Store

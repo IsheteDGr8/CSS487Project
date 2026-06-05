@@ -1,17 +1,21 @@
 /*
  * File: main.cpp
- * Project: Master Road Sign and Traffic Light Detection System
- * Authors: Ishaan & Manish Ram
+ * Project: Road Sign and Traffic Light Detection System
+ * Authors: Ishaan, Manish Ram
  *
  * Purpose:
- *   Master pipeline — folder-based still-image tests by sign type, traffic-light
- *   image tests, then dashcam video. Pipeline mode controls which detector runs.
+ *   Demo entry point for the merged pipeline. Runs folder-based sign tests,
+ *   traffic-light image tests, and a dashcam video demo with live annotation.
  *
- * Pipeline modes (flip kDefaultStaticMode / kDefaultVideoMode to Both once
- * TrafficLightFinder accuracy improves):
- *   SignsOnly          — Ishaan's road-sign pipeline only
- *   TrafficLightsOnly  — Manish's traffic-light pipeline only
- *   Both               — run both detectors on the same frame
+ * Pipeline architecture:
+ *   - Road signs: ColorSegmenter (HSV masks) + ShapeAnalyzer (shape rules).
+ *   - Traffic lights: HsvMaskSegmenter + RoadObjectDetector + TrafficLightFinder.
+ *   - PipelineMode and SignCategory prevent cross-detector false positives.
+ *
+ * Pipeline modes (see kDefaultStaticMode / kDefaultVideoMode):
+ *   SignsOnly          — sign detectors only
+ *   TrafficLightsOnly  — traffic-light detectors only
+ *   Both               — both detectors on the same frame
  *
  * CLI overrides (optional):
  *   --signs-only   force SignsOnly on every phase
@@ -19,9 +23,8 @@
  *   --both         force Both on every phase
  *
  * Assumptions:
- *   - OpenCV 4 is installed.
- *   - Test images/videos live under data/road_sign_data/, data/, or build/data/.
- *   - Working directory is the project root when launched from Visual Studio.
+ *   - OpenCV 4 is installed; working directory is the project root.
+ *   - Test data lives under data/road_sign_data/, data/, or build/data/.
  */
 
 #include <cstddef>
@@ -569,6 +572,16 @@ static void runDashcamVideoTests(ColorSegmenter &signSegmenter,
     cv::destroyAllWindows();
 }
 
+/*
+ * Purpose: Run all folder demos, then play dashcam.mp4.
+ *
+ * Preconditions:
+ *   - argc/argv may contain optional --signs-only, --lights-only, or --both.
+ *   - Test data exists under data/road_sign_data/ (or fallback paths).
+ *
+ * Postconditions:
+ *   - Displays annotated images and video windows; returns 1 if no data found.
+ */
 int main(const int argc, char *argv[])
 {
     ColorSegmenter signSegmenter;

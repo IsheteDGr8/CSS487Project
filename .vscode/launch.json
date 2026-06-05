@@ -1,0 +1,53 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "RoadSignDetector (full demo)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "externalConsole": false,
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "C:\\opencv\\build\\x64\\vc16\\bin;${command:cmake.launchTargetDirectory};${env:PATH}"
+                }
+            ]
+        },
+        {
+            "name": "RoadSignDetector (signs only)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": ["--signs-only"],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "externalConsole": false,
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "C:\\opencv\\build\\x64\\vc16\\bin;${command:cmake.launchTargetDirectory};${env:PATH}"
+                }
+            ]
+        },
+        {
+            "name": "RoadSignDetector (traffic lights only)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": ["--lights-only"],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "externalConsole": false,
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "C:\\opencv\\build\\x64\\vc16\\bin;${command:cmake.launchTargetDirectory};${env:PATH}"
+                }
+            ]
+        }
+    ]
+}

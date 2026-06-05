@@ -1,0 +1,20 @@
+{
+    "cmake.buildBeforeRun": true,
+    "cmake.buildType": "Debug",
+    "cmake.debugConfig": {
+        "cwd": "${workspaceFolder}",
+        "args": [
+            "data/road_sign_data/regulatory signs/stop_sign_2.jpg"
+        ],
+        "externalConsole": false,
+        "environment": [
+            {
+                "name": "PATH",
+                "value": "C:\\opencv\\build\\x64\\vc16\\bin;${command:cmake.launchTargetDirectory};${env:PATH}"
+            }
+        ]
+    },
+    "cmake.configureSettings": {
+        "OpenCV_DIR": "C:/opencv/build"
+    }
+}

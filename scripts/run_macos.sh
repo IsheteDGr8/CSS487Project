@@ -1,17 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -lt 1 ]; then
-    echo "Usage: ./scripts/run_macos.sh <image_path> [output_directory]"
-    exit 1
-fi
+# Runs the full folder + dashcam demo from the project root.
+# Optional flags: --signs-only  --lights-only  --both
 
 if [ ! -x build/RoadSignDetector ]; then
     ./scripts/build_macos.sh
 fi
 
-if [ "$#" -ge 2 ]; then
-    ./build/RoadSignDetector "$1" "$2"
-else
-    ./build/RoadSignDetector "$1"
-fi
+cd "$(dirname "$0")/.."
+./build/RoadSignDetector "$@"

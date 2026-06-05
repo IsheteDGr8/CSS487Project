@@ -2,7 +2,7 @@
  * ShapeAnalyzer.h
  *
  * Purpose: Finds sign-shaped regions in color masks and draws labels on the frame.
- * Authors: Ishaan, Manish
+ * Authors: Ishaan
  *
  * Assumptions:
  *   - Masks come from ColorSegmenter and match outputImage size.

@@ -43,8 +43,6 @@ target_link_libraries(RoadSignCore
 
 add_executable(RoadSignDetector
     src/main.cpp
-    src/ColorSegmenter.cpp   
-    src/ShapeAnalyzer.cpp
 )
 
 target_link_libraries(RoadSignDetector

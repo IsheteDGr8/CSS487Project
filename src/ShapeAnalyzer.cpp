@@ -2,13 +2,13 @@
  * ShapeAnalyzer.cpp
  *
  * Purpose: Contour and shape checks, speed-limit digit reading, and on-frame labels.
- * Authors: Ishaan, Manish
+ * Authors: Ishaan
  *
  * Assumptions:
  *   - Same as ShapeAnalyzer.h.
  *   - Contour area and aspect-ratio gates reject most background blobs.
  */
-#include "../include/RoadSignDetector/ShapeAnalyzer.h"
+#include "RoadSignDetector/ShapeAnalyzer.h"
 #include <algorithm>
 #include <string>
 

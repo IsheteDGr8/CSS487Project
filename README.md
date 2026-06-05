@@ -1,103 +1,167 @@
 # Road Sign and Traffic Light Detection
 
-Classical OpenCV project for detecting road signs and traffic lights without
-pretrained machine learning models.
+Classical computer-vision project (OpenCV 4, C++17) that detects **US-style road signs**
+and **traffic lights** without machine learning.
 
-The current `Manish` branch contains contour extraction, area filtering, shape
-analysis, Hough circle checks, basic text reading, and rule-based heuristics.
+**Team:** Ishaan (road signs) and Manish Ram (traffic lights)
 
-## Build on macOS
+## Features
 
-Open a terminal in this folder:
+| Component | Classes | Detects |
+|---|---|---|
+| Road signs | `ColorSegmenter`, `ShapeAnalyzer` | Construction, guide, service, warning, regulatory (stop, do-not-enter, speed limit) |
+| Traffic lights | `HsvMaskSegmenter`, `RoadObjectDetector`, `TrafficLightFinder` | Red, yellow, and green bulbs |
 
-```bash
-./scripts/build_macos.sh
-```
+The demo runs **folder-based still-image tests** followed by a **dashcam video**. Pipeline
+modes keep sign and traffic-light detectors separate during static tests to avoid false
+positives, then combine both on video.
 
-Run the detector:
+## Requirements
 
-```bash
-./build/RoadSignDetector path/to/image.jpg output
-```
+- Visual Studio 2022 with C++ desktop development
+- OpenCV 4 for Windows (`OpenCV_DIR` → folder containing `OpenCVConfig.cmake`)
+- CMake 3.20+
 
-The optional output folder receives:
+## Build (Windows)
 
-- `annotated.png`
-- `red_mask.png`
-- `yellow_mask.png`
-- `green_mask.png`
-- `blue_mask.png`
-
-## Build on Visual Studio 2022 Community
-
-Install OpenCV 4 for Windows and set `OpenCV_DIR` to the folder containing
-`OpenCVConfig.cmake`. Example:
+Set OpenCV if needed:
 
 ```bat
 set OpenCV_DIR=C:\opencv\build
 ```
 
-Then run:
+Build:
 
 ```bat
 scripts\build_vs2022.bat
 ```
 
-Run the detector:
+Or open this folder in VS Code / Visual Studio and press **F7** (CMake build to `build/`).
+
+## Run (Windows)
+
+From the project root:
 
 ```bat
-build-vs2022\Release\RoadSignDetector.exe path\to\image.jpg output
+scripts\run_demo.bat
 ```
 
-Visual Studio can also open this folder directly as a CMake project.
+Optional pipeline overrides:
 
-## Project Layout
+```bat
+scripts\run_demo.bat --signs-only
+scripts\run_demo.bat --lights-only
+scripts\run_demo.bat --both
+```
 
-- `include/RoadSignDetector/DetectionTypes.hpp` shared enum and result structs.
-- `include/RoadSignDetector/RoadObjectDetector.hpp` detector API.
-- `src/RoadObjectDetector.cpp` contours, area filters, shape analysis, Hough circles, and heuristics.
-- `src/TextReader.cpp` template based text and speed number reading.
-- `src/SignPictureAnalyzer.cpp` icon clues such as red slash, white cross, and dark symbols.
-- `src/HsvMaskSegmenter.cpp` simple HSV mask generator for standalone testing.
-- `src/DisplayOnTerminal.cpp` console table output.
-- `src/DebugImageWriter.cpp` annotated image and mask output.
+### Visual Studio Code
 
-## Detection Pipeline
+Use **Run and Debug** → **RoadSignDetector (full demo)** (F5). Working directory must be
+the project root so `data/road_sign_data/` resolves correctly.
 
-1. Receive one binary mask per HSV color family.
-2. Normalize each mask to foreground/background pixels.
-3. Extract external contours with `cv::findContours`.
-4. Filter tiny noise using contour area limits.
-5. Measure perimeter, bounding box, aspect ratio, circularity, and vertices.
-6. Approximate polygons with `cv::approxPolyDP`.
-7. Search each candidate region with `cv::HoughCircles`.
-8. Read simple sign text and speed numbers using generated OpenCV font templates.
-9. Apply rules such as red octagon -> stop sign, red circle plus digits -> speed
-   sign, red circle plus slash and arrow -> turn restriction, blue circle plus
-   white arrow -> keep direction, red triangle plus train symbols -> railway
-   crossing, and circular colored bulb -> traffic light.
+### Controls
 
-## Current Labels
+| Phase | Action |
+|---|---|
+| Still-image tests | Press **any key** to advance |
+| Dashcam video | Press **ESC** to exit |
 
-The detector can currently label:
+## Build and run (macOS)
 
-- stop sign
-- speed limit sign with a number
-- no U-turn sign
-- no left turn sign
-- no right turn sign
-- keep left sign
-- keep right sign
-- railway crossing sign
-- falling rocks sign
-- road narrows sign
-- pedestrian crossing sign
-- bicycle crossing sign
-- ferry sign
-- animal crossing sign
-- first aid sign
-- no horn sign
-- no entry sign
-- safety first sign
-- circular sign
-- red, yellow, and green traffic lights
+```bash
+./scripts/build_macos.sh
+./scripts/run_macos.sh
+```
+
+## Test data layout
+
+```
+data/road_sign_data/
+  construction signs/
+  guide signs/
+  service signs/
+  warning signs/
+  regulatory signs/     stop_*, no_entry_*, speed_limit_*
+  traffic lights/
+  dashcam.mp4
+```
+
+## Project layout
+
+```
+include/RoadSignDetector/
+  ColorSegmenter.h          HSV masks for sign colors
+  ShapeAnalyzer.h           Shape-based sign classification
+  DetectionTypes.hpp        Shared enums and Detection struct
+  HsvMaskSegmenter.hpp      HSV masks for traffic-light colors
+  RoadObjectDetector.hpp    Traffic-light facade (dual-path)
+  TrafficLightFinder.hpp    Bulb finder (HSV + Hough)
+  DetectionSelection.hpp    Top-N detection filtering
+  DisplayOnTerminal.hpp     Console table output (legacy CLI)
+  DebugImageWriter.hpp      Annotated PNG output (legacy CLI)
+
+src/
+  main.cpp                  Demo entry point
+  ColorSegmenter.cpp
+  ShapeAnalyzer.cpp
+  RoadObjectDetector.cpp
+  TrafficLightFinder.cpp
+  HsvMaskSegmenter.cpp
+  DetectionSelection.cpp
+  DisplayOnTerminal.cpp
+  DebugImageWriter.cpp
+  TextReader.cpp            OCR helpers (used by legacy Manish pipeline)
+
+scripts/
+  build_vs2022.bat          Build on Windows
+  run_demo.bat              Run full demo on Windows
+  build_macos.sh / run_macos.sh
+
+docs/
+  TECHNICAL_WRITEUP.md      Report template for Canvas submission
+  architecture-diagram.svg  Pipeline overview
+```
+
+## Detection pipeline
+
+### Road signs (Ishaan)
+
+1. `ColorSegmenter` builds per-color HSV masks (red, yellow, blue, orange, green, white).
+2. `ShapeAnalyzer` finds contours, checks shape rules, and draws labels.
+3. Each test folder runs **only its matching detector** (e.g. regulatory folder does not
+   scan for blue service signs in the background).
+
+### Traffic lights (Manish)
+
+1. `TrafficLightFinder` searches the full frame for bright circular bulbs.
+2. `HsvMaskSegmenter` masks feed contour + Hough analysis in `RoadObjectDetector`.
+3. Top **two** detections by confidence are drawn (matching original demo behavior).
+
+### Dashcam video
+
+Runs regulatory + warning + service sign detectors plus traffic-light detection (`Both` mode).
+
+## Sign labels produced
+
+| Category | Label on frame |
+|---|---|
+| Regulatory | `STOP SIGN`, `DO NOT ENTER`, `SPEED LIMIT ##` |
+| Warning | `WARNING SIGN` |
+| Construction | `CONSTRUCTION SIGN` |
+| Guide | `GUIDE SIGN` |
+| Service | `SERVICE SIGN` |
+| Traffic light | `RED_TRAFFIC_LIGHT`, `YELLOW_TRAFFIC_LIGHT`, `GREEN_TRAFFIC_LIGHT` |
+
+## Submission checklist
+
+- [ ] Working source (this repo, `Ishaan` branch)
+- [ ] Test images (`data/road_sign_data/`)
+- [ ] Batch scripts or documented IDE run (above)
+- [ ] Technical write-up (`docs/TECHNICAL_WRITEUP.md`)
+- [ ] Presentation slides
+- [ ] Zip submitted on Canvas by one team member
+
+## References
+
+- OpenCV 4 documentation: https://docs.opencv.org/4.x/
+- US MUTCD sign shapes and colors (assumed for heuristic rules)
